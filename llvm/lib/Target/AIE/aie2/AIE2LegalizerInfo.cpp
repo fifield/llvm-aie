@@ -433,6 +433,14 @@ AIE2LegalizerInfo::AIE2LegalizerInfo(const AIE2Subtarget &ST) : AIEHelper(ST) {
             return VecTy.getSizeInBits() == 32;
           },
           bitcastToVectorElement32(1))
+      // AIE2 has no 64-bit element extract. View vectors of s64 (e.g.
+      // accumulators) as twice as many s32 elements: the generic bitcast
+      // lowering extracts both 32-bit halves and recombines them into s64.
+      .bitcastIf(
+          [=](const LegalityQuery &Query) {
+            return Query.Types[1].getElementType() == S64;
+          },
+          bitcastAccToVectorType(1))
       // For 2 x 8 vectors, we want to increase the number of elements to 4.
       // moreElements() pads through a G_UNMERGE_VALUES of the <2 x s8>, which
       // is itself legalized back into a G_EXTRACT_VECTOR_ELT of it, looping.
@@ -453,6 +461,11 @@ AIE2LegalizerInfo::AIE2LegalizerInfo(const AIE2Subtarget &ST) : AIEHelper(ST) {
   getActionDefinitionsBuilder(G_INSERT_VECTOR_ELT)
       .clampScalar(2, S32, S32) // Clamp the idx to 32 bit since VINSERT
                                 // relies on eR29 only for idx.
+      // AIE2 has no 64-bit element insert: custom legalize vectors of s64 by
+      // inserting both 32-bit halves into the vector viewed as s32 elements.
+      .customIf([=](const LegalityQuery &Query) {
+        return Query.Types[0].getElementType() == S64;
+      })
       // Custom legalize 2 x 32 vectors
       .customIf(typeInSet(0, {V2S32}))
       // Extend vectors to have at least 256-bits

@@ -969,6 +969,29 @@ bool AIELegalizerHelper::legalizeG_INSERT_VECTOR_ELT(LegalizerHelper &Helper,
     return NewValReg;
   };
   const AIEBaseInstrInfo *II = ST.getInstrInfo();
+
+  // AIE2 cannot insert a 64-bit element. Split the value into its 32-bit
+  // halves and insert them at 2 * Idx and 2 * Idx + 1 of the vector viewed as
+  // twice as many s32 elements. The resulting 32-bit inserts are legalized
+  // by the regular paths below.
+  if (ST.isAIE2() && DstVecTy.getElementType() == S64) {
+    const LLT CastTy = LLT::fixed_vector(DstVecTy.getNumElements() * 2, S32);
+    const LLT IdxTy = MRI.getType(IdxReg);
+    auto CastVec = MIRBuilder.buildBitcast(CastTy, SrcVecReg);
+    auto Halves = MIRBuilder.buildUnmerge(S32, ValReg);
+    auto LoIdx =
+        MIRBuilder.buildShl(IdxTy, IdxReg, MIRBuilder.buildConstant(IdxTy, 1));
+    auto HiIdx =
+        MIRBuilder.buildAdd(IdxTy, LoIdx, MIRBuilder.buildConstant(IdxTy, 1));
+    auto InsLo = MIRBuilder.buildInsertVectorElement(CastTy, CastVec,
+                                                     Halves.getReg(0), LoIdx);
+    auto InsHi = MIRBuilder.buildInsertVectorElement(CastTy, InsLo,
+                                                     Halves.getReg(1), HiIdx);
+    MIRBuilder.buildBitcast(DstVecReg, InsHi);
+    MI.eraseFromParent();
+    return true;
+  }
+
   switch (DstVecSize) {
   case 64: {
     if (DstVecTy != V2S32) {
