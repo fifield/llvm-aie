@@ -990,6 +990,11 @@ foreach Pair = ExtrSubvec64Pairs in {
 def : Pat<(int_aie2p_vbroadcast32_bf512 eR:$s0), (VBCST_32 eR:$s0)>;
 def : Pat<(int_aie2p_vbroadcast64_bf512 eL:$s0), (VBCST_64 eL:$s0)>;
 
+// Zero a 1024-bit accumulator. VCLR clears a whole 2048-bit DM register, so
+// take its low half.
+def : Pat<(v16i64 (int_aie2p_vbroadcast_zero_acc1024)),
+          (EXTRACT_SUBREG (VCLR), sub_1024_acc_lo)>;
+
 // VEXTBCST
 def : Pat<(int_aie2p_vextract_broadcast32_bf512 VEC512:$src, eR:$idx),
            (VEXTBCST_32_vec_extract_broadcast_r  VEC512:$src, eR:$idx)>;
