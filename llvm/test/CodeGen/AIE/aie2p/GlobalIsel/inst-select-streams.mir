@@ -110,7 +110,8 @@ body:             |
     ; CHECK-LABEL: name: test_get_scd_v64acc32_0
     ; CHECK: liveins: $r0
     ; CHECK-NEXT: {{  $}}
-    ; CHECK-NEXT: $crscden = MOV_scalar_imm11_pseudo 0
+    ; CHECK-NEXT: [[COPY:%[0-9]+]]:er = COPY $r0
+    ; CHECK-NEXT: $crscden = COPY [[COPY]]
     ; CHECK-NEXT: [[VMOV_0_mv_scd_dm_imm:%[0-9]+]]:acc2048 = VMOV_0_mv_scd_dm_imm implicit $crscden
     ; CHECK-NEXT: $crscden = MOV_scalar_imm11_pseudo 1
     ; CHECK-NEXT: $dm0 = COPY [[VMOV_0_mv_scd_dm_imm]]
@@ -133,7 +134,10 @@ body:             |
     ; CHECK-LABEL: name: test_get_scd_v64acc32_1
     ; CHECK: liveins: $r0
     ; CHECK-NEXT: {{  $}}
+    ; CHECK-NEXT: [[COPY:%[0-9]+]]:er = COPY $r0
+    ; CHECK-NEXT: $crscden = COPY [[COPY]]
     ; CHECK-NEXT: [[VMOV_1_mv_scd_dm_imm:%[0-9]+]]:acc2048 = VMOV_1_mv_scd_dm_imm implicit $crscden
+    ; CHECK-NEXT: $crscden = MOV_scalar_imm11_pseudo 1
     ; CHECK-NEXT: $dm0 = COPY [[VMOV_1_mv_scd_dm_imm]]
     ; CHECK-NEXT: PseudoRET implicit $lr, implicit $dm0
     %1:gprregbank(s32) = COPY $r0
@@ -154,7 +158,8 @@ body:             |
     ; CHECK-LABEL: name: test_get_scd_v64acc32_2
     ; CHECK: liveins: $r0
     ; CHECK-NEXT: {{  $}}
-    ; CHECK-NEXT: $crscden = MOV_scalar_imm11_pseudo 2
+    ; CHECK-NEXT: [[COPY:%[0-9]+]]:er = COPY $r0
+    ; CHECK-NEXT: $crscden = COPY [[COPY]]
     ; CHECK-NEXT: [[VMOV_2_:%[0-9]+]]:acc2048 = VMOV_2 implicit $crscden
     ; CHECK-NEXT: $crscden = MOV_scalar_imm11_pseudo 1
     ; CHECK-NEXT: $dm0 = COPY [[VMOV_2_]]
@@ -177,7 +182,8 @@ body:             |
     ; CHECK-LABEL: name: test_get_scd_v64acc32_3
     ; CHECK: liveins: $r0
     ; CHECK-NEXT: {{  $}}
-    ; CHECK-NEXT: $crscden = MOV_scalar_imm11_pseudo 3
+    ; CHECK-NEXT: [[COPY:%[0-9]+]]:er = COPY $r0
+    ; CHECK-NEXT: $crscden = COPY [[COPY]]
     ; CHECK-NEXT: [[VMOV_3_:%[0-9]+]]:acc2048 = VMOV_3 implicit $crscden
     ; CHECK-NEXT: $crscden = MOV_scalar_imm11_pseudo 1
     ; CHECK-NEXT: $dm0 = COPY [[VMOV_3_]]

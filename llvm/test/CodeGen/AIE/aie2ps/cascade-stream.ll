@@ -74,7 +74,7 @@ define dso_local inreg noundef <64 x i32> @_Z23test_get_scd_v64acc32_0i(i32 noun
 ; CHECK-NEXT:    nopa ; nopb ; nops ; ret lr; nopm ; nopv
 ; CHECK-NEXT:    nop // Delay Slot 5
 ; CHECK-NEXT:    nop // Delay Slot 4
-; CHECK-NEXT:    movx crscden, #0 // Delay Slot 3
+; CHECK-NEXT:    mov crscden, r0 // Delay Slot 3
 ; CHECK-NEXT:    vmov.0 dm0, scd // Delay Slot 2
 ; CHECK-NEXT:    movx crscden, #1 // Delay Slot 1
 entry:
@@ -86,12 +86,12 @@ entry:
 define dso_local inreg noundef <64 x i32> @_Z23test_get_scd_v64acc32_1i(i32 noundef %en)  {
 ; CHECK-LABEL: _Z23test_get_scd_v64acc32_1i:
 ; CHECK:       // %bb.0: // %entry
-; CHECK-NEXT:    ret lr
+; CHECK-NEXT:    nopa ; nopb ; nops ; ret lr; nopm ; nopv
 ; CHECK-NEXT:    nop // Delay Slot 5
 ; CHECK-NEXT:    nop // Delay Slot 4
-; CHECK-NEXT:    nop // Delay Slot 3
+; CHECK-NEXT:    mov crscden, r0 // Delay Slot 3
 ; CHECK-NEXT:    vmov.1 dm0, scd // Delay Slot 2
-; CHECK-NEXT:    nop // Delay Slot 1
+; CHECK-NEXT:    movx crscden, #1 // Delay Slot 1
 entry:
   %0 = tail call noundef <64 x i32> @llvm.aie2ps.scd.ACC2048(i32 %en, i32 1)
   ret <64 x i32> %0
@@ -104,7 +104,7 @@ define dso_local inreg noundef <64 x i32> @_Z23test_get_scd_v64acc32_2i(i32 noun
 ; CHECK-NEXT:    nopa ; nopb ; nops ; ret lr; nopm ; nopv
 ; CHECK-NEXT:    nop // Delay Slot 5
 ; CHECK-NEXT:    nop // Delay Slot 4
-; CHECK-NEXT:    movx crscden, #2 // Delay Slot 3
+; CHECK-NEXT:    mov crscden, r0 // Delay Slot 3
 ; CHECK-NEXT:    vmov.2 dm0, scd // Delay Slot 2
 ; CHECK-NEXT:    movx crscden, #1 // Delay Slot 1
 entry:
@@ -119,7 +119,7 @@ define dso_local inreg noundef <64 x i32> @_Z23test_get_scd_v64acc32_3i(i32 noun
 ; CHECK-NEXT:    nopa ; nopb ; nops ; ret lr; nopm ; nopv
 ; CHECK-NEXT:    nop // Delay Slot 5
 ; CHECK-NEXT:    nop // Delay Slot 4
-; CHECK-NEXT:    movx crscden, #3 // Delay Slot 3
+; CHECK-NEXT:    mov crscden, r0 // Delay Slot 3
 ; CHECK-NEXT:    vmov.3 dm0, scd // Delay Slot 2
 ; CHECK-NEXT:    movx crscden, #1 // Delay Slot 1
 entry:

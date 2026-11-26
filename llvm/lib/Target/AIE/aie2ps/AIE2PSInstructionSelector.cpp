@@ -4724,6 +4724,12 @@ bool AIE2PSInstructionSelector::selectCascadeStreamInsn(
   } else {
     auto IntrinsicID = cast<GIntrinsic>(I).getIntrinsicID();
     switch (IntrinsicID) {
+    case Intrinsic::aie2ps_scd_ACC2048:
+      // The position is encoded in the opcode; the enable is the operand
+      // before it.
+      EnableReg = I.getOperand(I.getNumOperands() - 2).getReg();
+      CascadeMV = MIB.buildInstr(OpCode, {CascadeReg}, {});
+      break;
     case Intrinsic::aie2ps_scd_expand_ACC2048: {
       EnableReg = I.getOperand(I.getNumOperands() - 2).getReg();
       const Register PosReg = I.getOperand(I.getNumOperands() - 1).getReg();

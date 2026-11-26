@@ -78,7 +78,7 @@ define dso_local inreg noundef <64 x i32> @_Z23test_get_scd_v64acc32_0i(i32 noun
 ; CHECK-NEXT:    vmov.0 dm0, scd; nopb ; nopxm ; nops
 ; CHECK-NEXT:    ret lr
 ; CHECK-NEXT:    nop // Delay Slot 5
-; CHECK-NEXT:    mov crscden, #0 // Delay Slot 4
+; CHECK-NEXT:    mov crscden, r0 // Delay Slot 4
 ; CHECK-NEXT:    nop // Delay Slot 3
 ; CHECK-NEXT:    nop // Delay Slot 2
 ; CHECK-NEXT:    mov crscden, #1 // Delay Slot 1
@@ -91,13 +91,13 @@ entry:
 define dso_local inreg noundef <64 x i32> @_Z23test_get_scd_v64acc32_1i(i32 noundef %en)  {
 ; CHECK-LABEL: _Z23test_get_scd_v64acc32_1i:
 ; CHECK:       // %bb.0: // %entry
-; CHECK-NEXT:    vmov.1 dm0, scd; nopb ; nops ; nopxm ; nopv
-; CHECK-NEXT:    nopa ; ret lr
+; CHECK-NEXT:    vmov.1 dm0, scd; nopb ; nopxm ; nops
+; CHECK-NEXT:    ret lr
 ; CHECK-NEXT:    nop // Delay Slot 5
-; CHECK-NEXT:    nop // Delay Slot 4
+; CHECK-NEXT:    mov crscden, r0 // Delay Slot 4
 ; CHECK-NEXT:    nop // Delay Slot 3
 ; CHECK-NEXT:    nop // Delay Slot 2
-; CHECK-NEXT:    nop // Delay Slot 1
+; CHECK-NEXT:    mov crscden, #1 // Delay Slot 1
 entry:
   %0 = tail call noundef <64 x i32> @llvm.aie2p.scd.ACC2048(i32 %en, i32 1)
   ret <64 x i32> %0
@@ -110,7 +110,7 @@ define dso_local inreg noundef <64 x i32> @_Z23test_get_scd_v64acc32_2i(i32 noun
 ; CHECK-NEXT:    vmov.2 dm0, scd; nopb ; nopxm ; nops
 ; CHECK-NEXT:    ret lr
 ; CHECK-NEXT:    nop // Delay Slot 5
-; CHECK-NEXT:    mov crscden, #2 // Delay Slot 4
+; CHECK-NEXT:    mov crscden, r0 // Delay Slot 4
 ; CHECK-NEXT:    nop // Delay Slot 3
 ; CHECK-NEXT:    nop // Delay Slot 2
 ; CHECK-NEXT:    mov crscden, #1 // Delay Slot 1
@@ -126,12 +126,77 @@ define dso_local inreg noundef <64 x i32> @_Z23test_get_scd_v64acc32_3i(i32 noun
 ; CHECK-NEXT:    vmov.3 dm0, scd; nopb ; nopxm ; nops
 ; CHECK-NEXT:    ret lr
 ; CHECK-NEXT:    nop // Delay Slot 5
-; CHECK-NEXT:    mov crscden, #3 // Delay Slot 4
+; CHECK-NEXT:    mov crscden, r0 // Delay Slot 4
 ; CHECK-NEXT:    nop // Delay Slot 3
 ; CHECK-NEXT:    nop // Delay Slot 2
 ; CHECK-NEXT:    mov crscden, #1 // Delay Slot 1
 entry:
   %0 = tail call noundef <64 x i32> @llvm.aie2p.scd.ACC2048(i32 %en, i32 3)
+  ret <64 x i32> %0
+}
+
+
+; The enable and the position of scd.ACC2048 are independent operands.
+define dso_local inreg noundef <64 x i32> @test_get_scd_v64acc32_en0_pos1()  {
+; CHECK-LABEL: test_get_scd_v64acc32_en0_pos1:
+; CHECK:       // %bb.0: // %entry
+; CHECK-NEXT:    vmov.1 dm0, scd; nopb ; nopxm ; nops
+; CHECK-NEXT:    ret lr
+; CHECK-NEXT:    nop // Delay Slot 5
+; CHECK-NEXT:    mov crscden, #0 // Delay Slot 4
+; CHECK-NEXT:    nop // Delay Slot 3
+; CHECK-NEXT:    nop // Delay Slot 2
+; CHECK-NEXT:    mov crscden, #1 // Delay Slot 1
+entry:
+  %0 = tail call noundef <64 x i32> @llvm.aie2p.scd.ACC2048(i32 0, i32 1)
+  ret <64 x i32> %0
+}
+
+
+define dso_local inreg noundef <64 x i32> @test_get_scd_v64acc32_en0_pos3()  {
+; CHECK-LABEL: test_get_scd_v64acc32_en0_pos3:
+; CHECK:       // %bb.0: // %entry
+; CHECK-NEXT:    vmov.3 dm0, scd; nopb ; nopxm ; nops
+; CHECK-NEXT:    ret lr
+; CHECK-NEXT:    nop // Delay Slot 5
+; CHECK-NEXT:    mov crscden, #0 // Delay Slot 4
+; CHECK-NEXT:    nop // Delay Slot 3
+; CHECK-NEXT:    nop // Delay Slot 2
+; CHECK-NEXT:    mov crscden, #1 // Delay Slot 1
+entry:
+  %0 = tail call noundef <64 x i32> @llvm.aie2p.scd.ACC2048(i32 0, i32 3)
+  ret <64 x i32> %0
+}
+
+
+define dso_local inreg noundef <64 x i32> @test_get_scd_v64acc32_en1_pos0()  {
+; CHECK-LABEL: test_get_scd_v64acc32_en1_pos0:
+; CHECK:       // %bb.0: // %entry
+; CHECK-NEXT:    vmov.0 dm0, scd; nopb ; nops ; nopxm ; nopv
+; CHECK-NEXT:    nopa ; ret lr
+; CHECK-NEXT:    nop // Delay Slot 5
+; CHECK-NEXT:    nop // Delay Slot 4
+; CHECK-NEXT:    nop // Delay Slot 3
+; CHECK-NEXT:    nop // Delay Slot 2
+; CHECK-NEXT:    nop // Delay Slot 1
+entry:
+  %0 = tail call noundef <64 x i32> @llvm.aie2p.scd.ACC2048(i32 1, i32 0)
+  ret <64 x i32> %0
+}
+
+
+define dso_local inreg noundef <64 x i32> @test_get_scd_v64acc32_en1_pos2()  {
+; CHECK-LABEL: test_get_scd_v64acc32_en1_pos2:
+; CHECK:       // %bb.0: // %entry
+; CHECK-NEXT:    vmov.2 dm0, scd; nopb ; nops ; nopxm ; nopv
+; CHECK-NEXT:    nopa ; ret lr
+; CHECK-NEXT:    nop // Delay Slot 5
+; CHECK-NEXT:    nop // Delay Slot 4
+; CHECK-NEXT:    nop // Delay Slot 3
+; CHECK-NEXT:    nop // Delay Slot 2
+; CHECK-NEXT:    nop // Delay Slot 1
+entry:
+  %0 = tail call noundef <64 x i32> @llvm.aie2p.scd.ACC2048(i32 1, i32 2)
   ret <64 x i32> %0
 }
 
