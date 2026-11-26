@@ -508,6 +508,12 @@ AIE2LegalizerInfo::AIE2LegalizerInfo(const AIE2Subtarget &ST) : AIEHelper(ST) {
             SrcTy.getSizeInBits() == 32 && DstTy.getSizeInBits() == 16)
           return true;
 
+        // 256-bit vector split into two 128-bit halves: there is no 128-bit
+        // sub-register to select the halves as.
+        if (DstTy.isVector() && SrcTy.isVector() &&
+            DstTy.getSizeInBits() == 128 && SrcTy.getSizeInBits() == 256)
+          return true;
+
         return SrcTy.isVector() && DstTy.isScalar() &&
                DstTy == SrcTy.getElementType();
       })

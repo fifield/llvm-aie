@@ -213,8 +213,21 @@ bool AIELegalizerHelper::legalizeG_BUILD_VECTOR(LegalizerHelper &Helper,
   unsigned DstVecSize = DstVecTy.getSizeInBits();
   const LLT DstVecEltTy = DstVecTy.getElementType();
   const unsigned EltSize = DstVecEltTy.getScalarSizeInBits();
-  if (!(ST.isAIE2P() || ST.isAIE2PS())) {
-    assert(EltSize != 64 && "Not expected 64-bit elmt type vector!");
+  // AIE2 cannot build vectors of s64 lanes directly (e.g. a <2 x s64> load
+  // that was split into scalar loads). Build the equivalent vector of s32
+  // halves instead; that G_BUILD_VECTOR is legalized again on its own.
+  if (EltSize == 64 && ST.isAIE2()) {
+    SmallVector<Register, 32> Halves;
+    for (const MachineOperand &Src : drop_begin(MI.operands())) {
+      auto Unmerge = MIRBuilder.buildUnmerge(S32, Src.getReg());
+      Halves.push_back(Unmerge.getReg(0));
+      Halves.push_back(Unmerge.getReg(1));
+    }
+    const LLT CastTy = LLT::fixed_vector(Halves.size(), S32);
+    MIRBuilder.buildBitcast(DstReg,
+                            MIRBuilder.buildBuildVector(CastTy, Halves));
+    MI.eraseFromParent();
+    return true;
   }
 
   assert((EltSize == 8 || EltSize == 16 || EltSize == 32 || EltSize == 64) &&
@@ -342,12 +355,32 @@ bool AIELegalizerHelper::legalizeG_UNMERGE_VALUES_128bit(
   auto ImplicitDef512 = MIRBuilder.buildUndef(Vec512);
 
   // Now create the VSHIFT
-  const unsigned VShiftOpc = II->getGenericVShiftOpcode();
-  auto VShift = MIRBuilder.buildInstr(VShiftOpc, {Vec512},
-                                      {ConcatValue, ImplicitDef512, ShiftAmt});
+  Register Shifted;
+  if (ST.isAIE2()) {
+    // AIE2 has no generic VSHIFT opcode; use the intrinsic on a v16i32 view.
+    const Register Concat32 =
+        Vec512 == V16S32
+            ? ConcatValue.getReg(0)
+            : MIRBuilder.buildBitcast(V16S32, ConcatValue).getReg(0);
+    Register Shift32 = MRI.createGenericVirtualRegister(V16S32);
+    MIRBuilder.buildIntrinsic(getVShiftIntrID(ST), Shift32, false, false)
+        .addUse(Concat32)
+        .addUse(Concat32)
+        .addUse(MIRBuilder.buildConstant(S32, 0).getReg(0))
+        .addUse(ShiftAmt.getReg(0));
+    Shifted = Vec512 == V16S32
+                  ? Shift32
+                  : MIRBuilder.buildBitcast(Vec512, Shift32).getReg(0);
+  } else {
+    const unsigned VShiftOpc = II->getGenericVShiftOpcode();
+    Shifted = MIRBuilder
+                  .buildInstr(VShiftOpc, {Vec512},
+                              {ConcatValue, ImplicitDef512, ShiftAmt})
+                  .getReg(0);
+  }
 
   // Finally, unpad the 512-bit result to 128-bit
-  MIRBuilder.buildInstr(UnpadOpc, {DstRegHigh}, {VShift});
+  MIRBuilder.buildInstr(UnpadOpc, {DstRegHigh}, {Shifted});
 
   MI.eraseFromParent();
   return true;
@@ -398,8 +431,8 @@ bool AIELegalizerHelper::legalizeG_UNMERGE_VALUES(LegalizerHelper &Helper,
   const LLT FirstTy = MRI.getType(FirstReg);
   const LLT LastTy = MRI.getType(LastReg);
 
-  if ((ST.isAIE2P() || ST.isAIE2PS()) && FirstTy.isVector() &&
-      FirstTy.getSizeInBits() == 128 && LastTy.getSizeInBits() == 256)
+  if (FirstTy.isVector() && FirstTy.getSizeInBits() == 128 &&
+      LastTy.getSizeInBits() == 256)
     return legalizeG_UNMERGE_VALUES_128bit(Helper, MI);
 
   // Splitting a 128-bit vector into two 64-bit halves, e.g. <4 x s32> into two
@@ -435,6 +468,24 @@ bool AIELegalizerHelper::legalizeG_UNMERGE_VALUES(LegalizerHelper &Helper,
                             MIRBuilder.buildTrunc(S16, Bits));
     MIRBuilder.buildBitcast(MI.getOperand(1).getReg(),
                             MIRBuilder.buildTrunc(S16, HighBits));
+    MI.eraseFromParent();
+    return true;
+  }
+
+  // AIE2 has no 64-bit lane access. Split a vector of s64 into its s32 halves
+  // and merge each pair back into s64. This also keeps small vectors of s64
+  // (e.g. <2 x s64>) out of the accumulator bank, which has no register class
+  // for them.
+  if (ST.isAIE2() && LastTy.isVector() && LastTy.getElementType() == S64 &&
+      FirstTy == S64) {
+    const unsigned NumElts = LastTy.getNumElements();
+    auto Cast =
+        MIRBuilder.buildBitcast(LLT::fixed_vector(NumElts * 2, S32), LastReg);
+    auto Halves = MIRBuilder.buildUnmerge(S32, Cast);
+    for (unsigned I = 0; I < NumElts; ++I)
+      MIRBuilder.buildMergeLikeInstr(
+          MI.getOperand(I).getReg(),
+          {Halves.getReg(2 * I), Halves.getReg(2 * I + 1)});
     MI.eraseFromParent();
     return true;
   }

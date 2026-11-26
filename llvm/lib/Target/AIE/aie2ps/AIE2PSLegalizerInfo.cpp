@@ -628,6 +628,7 @@ AIE2PSLegalizerInfo::AIE2PSLegalizerInfo(const AIE2PSSubtarget &ST)
       .clampMinNumElements(1, S8, 32)
       .clampMinNumElements(1, S16, 16)
       .clampMinNumElements(1, S32, 8)
+      .clampMinNumElements(1, S64, 4)
       // Custom legalize resulting vector types >= 256-bit
       .customIf(typeIs(1, V2S128))
       .customIf(typeInSet(1, AIE2PSVectorTypes))
